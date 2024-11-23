@@ -1,0 +1,11 @@
+groups:
+  - name: test_alerts
+    rules:
+      - alert: TestAlert
+        expr: vector(1)
+        labels:
+          severity: warning
+        annotations:
+          Summary: "Test Alert"
+          Text: "This is a test alert"
+          description: "This is a test alert to verify the alerting pipeline"
