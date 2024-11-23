@@ -1,132 +1,193 @@
-# Building a Modern Observability Stack: A Complete Guide
+# Monitoring Infrastructure Stack
 
-In today's microservices world, understanding what's happening inside your applications is more crucial than ever. This guide walks you through setting up a powerful, production-ready monitoring stack that brings together the best open-source observability tools available today.
+A comprehensive monitoring infrastructure setup using Prometheus, Grafana, Loki, Tempo, and OpenTelemetry for complete observability including metrics, logs, and traces.
 
-## The Challenge
+## Architecture Overview
 
-Have you ever wondered what's happening inside your distributed system? Where did that request go? Why is your application suddenly slow? Which service is consuming all your resources? These are the questions we'll help you answer.
+```mermaid
+graph TD
+    A[Applications] --> B[OpenTelemetry Collector]
+    B --> C[Prometheus]
+    B --> D[Loki]
+    B --> E[Tempo]
+    C --> F[Grafana]
+    D --> F
+    E --> F
+    C --> G[AlertManager]
+```
 
-## The Solution: A Complete Observability Stack
+## Components
 
-Our monitoring stack combines five powerful tools to give you complete visibility into your systems:
+| Component | Version | Port(s) | Purpose |
+|-----------|---------|---------|----------|
+| Prometheus | latest | 9090 | Metrics collection and storage |
+| Grafana | latest | 3000 | Visualization platform |
+| Loki | main | 3100 | Log aggregation |
+| Tempo | latest | 4317, 4318, 3200 | Distributed tracing |
+| OpenTelemetry | latest | 8888, 8889, 4316, 4315 | Telemetry collection |
+| AlertManager | latest | 9093 | Alert management |
 
- **Prometheus** - The de-facto standard for metrics collection
- **Grafana** - Beautiful, real-time visualizations
- **Loki** - Like Prometheus, but for logs
- **Tempo** - Distributed tracing made easy
- **OpenTelemetry** - The Swiss Army knife of telemetry collection
+## Installation
 
-## Why This Stack?
-
-Each tool in this stack was chosen for a specific reason:
-
-- **Prometheus** excels at collecting and querying metrics with its powerful PromQL
-- **Grafana** provides stunning visualizations and a unified interface for all our data
-- **Loki** makes log aggregation as simple as metrics collection
-- **Tempo** traces requests across your entire system without sampling
-- **OpenTelemetry** standardizes how we collect and transmit telemetry data
-
-## Quick Start
-
-Ready to dive in? Here's how to get started:
-
+1. Clone the repository:
 ```bash
 git clone https://github.com/sarim2000/monitoring-grafana-stack
 cd monitoring
+```
+
+2. Start the stack:
+```bash
 docker-compose up -d
 ```
 
-That's it! Visit http://localhost:3000 to access your Grafana dashboard.
+3. Verify deployment:
+```bash
+docker-compose ps
+```
 
-## Deep Dive: Component Architecture
+## Service Endpoints
 
-### 1. Metrics Pipeline (Prometheus)
-- Scrapes metrics from your services
-- Stores them efficiently for fast querying
-- Accessible via port 9090
-- Configured via `prometheus.yml`
+| Service | URL | Authentication |
+|---------|-----|----------------|
+| Grafana | http://localhost:3000 | Anonymous Admin (Dev only) |
+| Prometheus | http://localhost:9090 | None |
+| Loki | http://localhost:3100 | None |
+| Tempo | http://localhost:3200 | None |
+| AlertManager | http://localhost:9093 | None |
 
-### 2. Logging Pipeline (Loki)
-- Aggregates logs from all your containers
-- Uses labels for efficient querying
-- Accessible via port 3100
-- Configured via `loki-config.yaml`
+## Configuration Files
 
-### 3. Tracing Pipeline (Tempo)
-- Collects distributed traces
-- Supports multiple protocols (OTLP, Jaeger, Zipkin)
-- Accessible via ports:
-  - 4317 (OTLP gRPC)
-  - 4318 (OTLP HTTP)
-  - 3200 (Query API)
+### prometheus.yml
+```yaml
+scrape_interval: 15s
+evaluation_interval: 15s
+rule_files:
+  - "/etc/prometheus/prometheus-rules.yml"
+```
 
-### 4. Visualization Layer (Grafana)
-- Unified dashboard for all your data
-- Pre-configured data sources
-- Beautiful, interactive visualizations
-- Accessible via port 3000
+### alertmanager.yml
+```yaml
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+```
 
-### 5. Data Collection (OpenTelemetry)
-- Collects metrics, logs, and traces
-- Processes and forwards telemetry data
-- Supports multiple export formats
-- Configured via `otel-config.yaml`
+### Data Persistence
 
-## Production Considerations
+| Service | Volume | Purpose |
+|---------|--------|----------|
+| Prometheus | prometheus_data | Metric storage |
 
-### Security
-- Enable authentication in Grafana
-- Set up TLS for all services
-- Configure proper access controls
+## Network Configuration
 
-### Scalability
-- Use persistent volumes for long-term storage
-- Consider horizontal scaling for high-load scenarios
-- Implement proper retention policies
+All services communicate through a dedicated bridge network named 'loki'.
 
-### Monitoring the Monitors
-- Set up alerting for the monitoring stack itself
-- Monitor resource usage of monitoring components
-- Regular backup of configuration and data
+## Security Considerations
 
-## Troubleshooting Tips
+### Development Environment
+- Anonymous authentication enabled
+- No TLS/SSL
+- No access control
 
-Having issues? Here are some common troubleshooting steps:
-
-1. Check container logs:
-   ```bash
-   docker-compose logs [service-name]
+### Production Requirements
+1. Configure authentication:
+   ```yaml
+   GF_AUTH_ANONYMOUS_ENABLED: false
+   GF_AUTH_BASIC_ENABLED: true
    ```
-2. Verify network connectivity:
-   ```bash
-   docker network inspect loki
-   ```
-3. Validate configurations:
-   ```bash
-   docker-compose config
-   ```
+2. Enable TLS
+3. Implement proper access controls
+4. Set up secure webhook URLs
+5. Configure retention policies
 
-## Next Steps
+## Monitoring Stack Health
 
-Now that your monitoring stack is up and running, consider:
+### Key Metrics
+- Prometheus target status
+- Loki ingestion rate
+- Tempo trace throughput
+- Service memory usage
+- Disk usage for persistent volumes
 
-1. Creating custom dashboards
-2. Setting up alerting rules
-3. Integrating with your CI/CD pipeline
-4. Adding more data sources
-5. Implementing log rotation
+### Common Issues
+
+1. Out of Memory
+```bash
+docker stats  # Monitor container memory usage
+```
+
+2. Storage Issues
+```bash
+docker system df  # Check docker volume usage
+```
+
+3. Network Connectivity
+```bash
+docker network inspect loki
+```
+
+## Scaling Considerations
+
+### Vertical Scaling
+- Increase container memory limits
+- Expand volume storage
+
+### Horizontal Scaling
+- Deploy multiple collector instances
+- Configure load balancing
+
+## Development
+
+### Adding New Targets
+
+1. Update prometheus.yml:
+```yaml
+scrape_configs:
+  - job_name: 'new-target'
+    static_configs:
+      - targets: ['hostname:port']
+```
+
+2. Reload Prometheus configuration:
+```bash
+curl -X POST http://localhost:9090/-/reload
+```
+
+### Custom Dashboards
+
+Store custom dashboard JSON in:
+```
+./grafana/dashboards/
+```
+
+## Troubleshooting
+
+### Logs
+```bash
+# View service logs
+docker-compose logs -f [service]
+
+# Check Prometheus targets
+curl localhost:9090/api/v1/targets
+
+# Verify Loki status
+curl localhost:3100/ready
+```
+
+### Debug Mode
+```bash
+# Start with debug logging
+docker-compose up -d --env-file debug.env
+```
 
 ## Contributing
 
-Found a bug? Have a suggestion? Contributions are welcome! Feel free to:
+1. Fork the repository
+2. Create feature branch
+3. Submit pull request
 
-1. Open an issue
-2. Submit a pull request
-3. Share your dashboard configurations
+## License
 
-## Need Help?
-
-- Check our documentation
-- Join our community chat
-- Open an issue
-- Contact our team
+MIT License - See LICENSE file for details
