@@ -31,7 +31,7 @@ Each tool in this stack was chosen for a specific reason:
 Ready to dive in? Here's how to get started:
 
 ```bash
-git clone <your-repo>
+git clone https://github.com/sarim2000/monitoring-grafana-stack
 cd monitoring
 docker-compose up -d
 ```
@@ -130,5 +130,3 @@ Found a bug? Have a suggestion? Contributions are welcome! Feel free to:
 - Join our community chat
 - Open an issue
 - Contact our team
-
-Remember: Good observability isn't just about collecting data—it's about gaining insights that help you make better decisions. Happy monitoring! # monitoring-grafana-stack
